@@ -1,5 +1,8 @@
 package com.projectflow.controller;
 
+import com.projectflow.dto.task.TaskCreateRequest;
+import com.projectflow.dto.task.TaskReportCreateRequest;
+import com.projectflow.dto.task.TaskUpdateRequest;
 import com.projectflow.model.Task;
 import com.projectflow.model.TaskProgressReport;
 import com.projectflow.model.TaskStatus;
@@ -9,9 +12,11 @@ import com.projectflow.repository.TaskRepository;
 import com.projectflow.repository.UserRepository;
 import com.projectflow.service.ActivityService;
 import com.projectflow.service.TaskService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,21 +49,21 @@ public class TaskController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody Map<String, Object> body, @AuthenticationPrincipal User user) {
-        String name = (String) body.get("name");
-        String projectId = (String) body.get("projectId");
-        if (name != null && projectId != null && taskRepository.existsByProjectIdAndNameIgnoreCase(projectId, name.trim())) {
+    public ResponseEntity<?> create(@Valid @RequestBody TaskCreateRequest body, @AuthenticationPrincipal User user) {
+        String name = body.getName().trim();
+        String projectId = body.getProjectId();
+        if (taskRepository.existsByProjectIdAndNameIgnoreCase(projectId, name)) {
             return ResponseEntity.badRequest().body(Map.of("error", "A task with this name already exists in this project."));
         }
 
         Task task = new Task();
-        task.setName(name != null ? name.trim() : null);
+        task.setName(name);
         task.setProjectId(projectId);
-        task.setStatus(TaskStatus.fromString(body.getOrDefault("status", "todo").toString()));
-        task.setPriority(body.getOrDefault("priority", "medium").toString());
-        task.setDueDate((String) body.get("dueDate"));
+        task.setStatus(TaskStatus.fromString(body.getStatus() != null ? body.getStatus() : "todo"));
+        task.setPriority(body.getPriority() != null ? body.getPriority() : "medium");
+        task.setDueDate(body.getDueDate());
 
-        String assigneeId = (String) body.get("assigneeId");
+        String assigneeId = body.getAssigneeId();
         if (assigneeId != null) {
             User assignee = userRepository.findById(assigneeId).orElse(null);
             task.setAssignee(assignee);
@@ -70,7 +75,7 @@ public class TaskController {
     }
 
     @PatchMapping("/{id}/complete")
-    public ResponseEntity<?> complete(@PathVariable String id, @AuthenticationPrincipal User user) {
+    public ResponseEntity<?> complete(@PathVariable @NonNull String id, @AuthenticationPrincipal User user) {
         return taskRepository.findById(id)
                 .map(task -> {
                     task.setStatus(TaskStatus.COMPLETED);
@@ -79,21 +84,34 @@ public class TaskController {
                     return ResponseEntity.<Object>ok(saved);
                 })
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Task not found", "id", id != null ? id : "")));
+                        .body(Map.of("error", "Task not found", "id", id)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable String id, @RequestBody Map<String, Object> body,
+    public ResponseEntity<?> update(@PathVariable @NonNull String id, @Valid @RequestBody TaskUpdateRequest body,
                                     @AuthenticationPrincipal User user) {
         return taskRepository.findById(id)
                 .map(existing -> {
                     TaskStatus oldStatus = existing.getStatus();
-                    if (body.containsKey("name")) existing.setName((String) body.get("name"));
-                    if (body.containsKey("status")) existing.setStatus(TaskStatus.fromString(body.get("status").toString()));
-                    if (body.containsKey("priority")) existing.setPriority((String) body.get("priority"));
-                    if (body.containsKey("dueDate")) existing.setDueDate((String) body.get("dueDate"));
-                    if (body.containsKey("assigneeId")) {
-                        String assigneeId = (String) body.get("assigneeId");
+                    if (body.getName() != null) {
+                        String trimmedName = body.getName().trim();
+                        if (trimmedName.isEmpty()) {
+                            return ResponseEntity.badRequest().body(Map.of("error", "Task name is required."));
+                        }
+                        String projectId = existing.getProjectId();
+                        boolean duplicateName = projectId != null
+                                && taskRepository.existsByProjectIdAndNameIgnoreCase(projectId, trimmedName)
+                                && !trimmedName.equalsIgnoreCase(existing.getName());
+                        if (duplicateName) {
+                            return ResponseEntity.badRequest().body(Map.of("error", "A task with this name already exists in this project."));
+                        }
+                        existing.setName(trimmedName);
+                    }
+                    if (body.getStatus() != null) existing.setStatus(TaskStatus.fromString(body.getStatus()));
+                    if (body.getPriority() != null) existing.setPriority(body.getPriority());
+                    if (body.getDueDate() != null) existing.setDueDate(body.getDueDate());
+                    String assigneeId = body.getAssigneeId();
+                    if (assigneeId != null) {
                         userRepository.findById(assigneeId).ifPresent(existing::setAssignee);
                     }
                     Task saved = taskRepository.save(existing);
@@ -104,15 +122,15 @@ public class TaskController {
                     return ResponseEntity.<Object>ok(saved);
                 })
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Task not found", "id", id != null ? id : "")));
+                        .body(Map.of("error", "Task not found", "id", id)));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable String id, @AuthenticationPrincipal User user) {
+    public ResponseEntity<?> delete(@PathVariable @NonNull String id, @AuthenticationPrincipal User user) {
         Task existing = taskRepository.findById(id).orElse(null);
         if (existing == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Task not found", "id", id != null ? id : ""));
+                    .body(Map.of("error", "Task not found", "id", id));
         }
         taskRepository.deleteById(id);
         activityService.log(user, "deleted task", existing.getName());
@@ -120,7 +138,7 @@ public class TaskController {
     }
 
     @GetMapping("/{taskId}/reports")
-    public ResponseEntity<List<TaskProgressReport>> getReports(@PathVariable String taskId,
+    public ResponseEntity<List<TaskProgressReport>> getReports(@PathVariable @NonNull String taskId,
                                                                @AuthenticationPrincipal User user) {
         if (!taskRepository.existsById(taskId)) {
             return ResponseEntity.notFound().build();
@@ -129,8 +147,8 @@ public class TaskController {
     }
 
     @PostMapping("/{taskId}/reports")
-    public ResponseEntity<?> addReport(@PathVariable String taskId,
-                                       @RequestBody Map<String, Object> body,
+    public ResponseEntity<?> addReport(@PathVariable @NonNull String taskId,
+                                       @Valid @RequestBody TaskReportCreateRequest body,
                                        @AuthenticationPrincipal User user) {
         Task task = taskRepository.findById(taskId).orElse(null);
         if (task == null) {
@@ -143,16 +161,10 @@ public class TaskController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Only the task assignee or an admin can add progress reports."));
         }
-        String content = body != null && body.get("content") != null ? body.get("content").toString().trim() : null;
-        if (content == null || content.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Report content is required."));
-        }
-        if (content.length() > 2000) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Report content must be at most 2000 characters."));
-        }
+        String content = body.getContent().trim();
         String reportDate = java.time.LocalDate.now().toString();
-        if (body != null && body.get("reportDate") != null) {
-            String raw = body.get("reportDate").toString();
+        if (body.getReportDate() != null) {
+            String raw = body.getReportDate();
             if (raw.length() >= 10) reportDate = raw.substring(0, 10);
         }
         TaskProgressReport report = new TaskProgressReport();

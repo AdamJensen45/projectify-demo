@@ -1,7 +1,7 @@
-import { useEffect, useState, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { Navigate } from "react-router-dom"
 import { toast } from "sonner"
-import { taskService, reportService } from "@/services"
+import { taskService } from "@/services"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MyReportsCard } from "@/components/reports/MyReportsCard"
 import {
@@ -17,10 +17,12 @@ import { NewTaskDialog } from "@/components/tasks/NewTaskDialog"
 import { EditTaskDialog } from "@/components/tasks/EditTaskDialog"
 import { TaskReportsDialog } from "@/components/reports/TaskReportsDialog"
 import { LogProgressDialog } from "@/components/reports/LogProgressDialog"
+import { useMyReports } from "@/hooks/useMyReports"
+import { useTaskCollection } from "@/hooks/useTaskCollection"
 import { useFilteredTasks } from "@/hooks/useFilteredTasks"
 import { useAuth } from "@/context/AuthContext"
 import { useSearch } from "@/context/SearchContext"
-import type { Task, TaskStatus, TaskProgressReport } from "@/types"
+import type { Task, TaskStatus } from "@/types"
 import { withNormalizedStatus } from "@/lib/taskStatus"
 
 interface TasksPageProps {
@@ -30,44 +32,17 @@ interface TasksPageProps {
 export function TasksPage({ view = "my-tasks" }: TasksPageProps) {
   const { user, isAdmin } = useAuth()
   const { query } = useSearch()
-  const [taskList, setTaskList] = useState<Task[]>([])
-  const [loading, setLoading] = useState(true)
+  const { taskList, setTaskList, loading } = useTaskCollection({ view, userId: user?.id })
+  const { reports: myReports, reload: loadMyReports } = useMyReports(view === "my-tasks" && !!user?.id)
   const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("all")
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [reportsDialogTask, setReportsDialogTask] = useState<Task | null>(null)
-  const [myReports, setMyReports] = useState<TaskProgressReport[]>([])
   const [logProgressOpen, setLogProgressOpen] = useState(false)
-
-  const loadMyReports = () => {
-    reportService.getMyReports().then(setMyReports).catch(() => setMyReports([]))
-  }
 
   if (view === "all" && !isAdmin) {
     return <Navigate to="/tasks/my-tasks" replace />
   }
-
-  useEffect(() => {
-    if (view === "all") {
-      taskService.getAll().then((t) => {
-        setTaskList(t.map(withNormalizedStatus))
-        setLoading(false)
-      })
-    } else {
-      if (user?.id) {
-        taskService.getByAssignee(user.id).then((t) => {
-          setTaskList(t.map(withNormalizedStatus))
-          setLoading(false)
-        })
-      } else {
-        setLoading(false)
-      }
-    }
-  }, [view, user?.id])
-
-  useEffect(() => {
-    if (view === "my-tasks" && user?.id) loadMyReports()
-  }, [view, user?.id])
 
   const visibleTasks = useMemo(() => {
     if (!query.trim()) return taskList

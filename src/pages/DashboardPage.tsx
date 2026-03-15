@@ -20,9 +20,10 @@ import { ActivityPanel } from "@/components/dashboard/ActivityPanel"
 import { GanttSection } from "@/components/gantt/GanttSection"
 import { TaskTable } from "@/components/tasks/TaskTable"
 import { PageSkeleton } from "@/components/dashboard/PageSkeleton"
-import { activityService, projectService, taskService, reportService } from "@/services"
+import { activityService, projectService, taskService } from "@/services"
+import { useMyReports } from "@/hooks/useMyReports"
 import { useAuth } from "@/context/AuthContext"
-import type { Project, Task, Activity, TaskProgressReport } from "@/types"
+import type { Project, Task, Activity } from "@/types"
 import { MyReportsCard } from "@/components/reports/MyReportsCard"
 import { LogProgressDialog } from "@/components/reports/LogProgressDialog"
 import { TaskReportsDialog } from "@/components/reports/TaskReportsDialog"
@@ -38,7 +39,7 @@ export function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [activities, setActivities] = useState<Activity[]>([])
-  const [myReports, setMyReports] = useState<TaskProgressReport[]>([])
+  const { reports: myReports, reload: loadReports } = useMyReports(false)
   const [logDialogOpen, setLogDialogOpen] = useState(false)
   const [reportsDialogTask, setReportsDialogTask] = useState<Task | null>(null)
   const [loading, setLoading] = useState(true)
@@ -46,10 +47,6 @@ export function DashboardPage() {
   const [timeRangeTasks, setTimeRangeTasks] = useState<DashboardTimeRange>("1w")
   const location = useLocation()
   const { user } = useAuth()
-
-  const loadReports = () => {
-    reportService.getMyReports().then(setMyReports).catch(() => setMyReports([]))
-  }
 
   const loadActivities = () => {
     activityService.getAll().then(setActivities).catch(() => setActivities([]))
