@@ -1,0 +1,210 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(224 71.4% 4.1%);
+
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(224 71.4% 4.1%);
+
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(224 71.4% 4.1%);
+
+  --color-primary: hsl(220.9 39.3% 11%);
+  --color-primary-foreground: hsl(210 20% 98%);
+
+  --color-secondary: hsl(220 14.3% 95.9%);
+  --color-secondary-foreground: hsl(220.9 39.3% 11%);
+
+  --color-muted: hsl(220 14.3% 95.9%);
+  --color-muted-foreground: hsl(220 8.9% 46.1%);
+
+  --color-accent: hsl(220 14.3% 95.9%);
+  --color-accent-foreground: hsl(220.9 39.3% 11%);
+
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(210 20% 98%);
+
+  --color-border: hsl(220 13% 91%);
+  --color-input: hsl(220 13% 91%);
+  --color-ring: hsl(224 71.4% 4.1%);
+
+  --color-sidebar-background: hsl(0 0% 98%);
+  --color-sidebar-foreground: hsl(240 5.3% 26.1%);
+  --color-sidebar-primary: hsl(240 5.9% 10%);
+  --color-sidebar-primary-foreground: hsl(0 0% 98%);
+  --color-sidebar-accent: hsl(240 4.8% 95.9%);
+  --color-sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --color-sidebar-border: hsl(220 13% 91%);
+  --color-sidebar-ring: hsl(217.2 91.2% 59.8%);
+
+  --color-chart-1: hsl(12 76% 61%);
+  --color-chart-2: hsl(173 58% 39%);
+  --color-chart-3: hsl(197 37% 24%);
+  --color-chart-4: hsl(43 74% 66%);
+  --color-chart-5: hsl(27 87% 67%);
+
+  --radius: 0.625rem;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+@layer base {
+  .dark {
+    --color-background: hsl(224 71.4% 4.1%);
+    --color-foreground: hsl(210 20% 98%);
+
+    --color-card: hsl(224 71.4% 4.1%);
+    --color-card-foreground: hsl(210 20% 98%);
+
+    --color-popover: hsl(224 71.4% 4.1%);
+    --color-popover-foreground: hsl(210 20% 98%);
+
+    --color-primary: hsl(210 20% 98%);
+    --color-primary-foreground: hsl(220.9 39.3% 11%);
+
+    --color-secondary: hsl(215 27.9% 16.9%);
+    --color-secondary-foreground: hsl(210 20% 98%);
+
+    --color-muted: hsl(215 27.9% 16.9%);
+    --color-muted-foreground: hsl(217.9 10.6% 64.9%);
+
+    --color-accent: hsl(215 27.9% 16.9%);
+    --color-accent-foreground: hsl(210 20% 98%);
+
+    --color-destructive: hsl(0 62.8% 30.6%);
+    --color-destructive-foreground: hsl(210 20% 98%);
+
+    --color-border: hsl(215 27.9% 16.9%);
+    --color-input: hsl(215 27.9% 16.9%);
+    --color-ring: hsl(216 12.2% 83.9%);
+
+    --color-sidebar-background: hsl(224 71.4% 4.1%);
+    --color-sidebar-foreground: hsl(240 4.8% 95.9%);
+    --color-sidebar-primary: hsl(224.3 76.3% 48%);
+    --color-sidebar-primary-foreground: hsl(0 0% 100%);
+    --color-sidebar-accent: hsl(215 27.9% 16.9%);
+    --color-sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+    --color-sidebar-border: hsl(215 27.9% 16.9%);
+    --color-sidebar-ring: hsl(217.2 91.2% 59.8%);
+
+    --color-chart-1: hsl(220 70% 50%);
+    --color-chart-2: hsl(160 60% 45%);
+    --color-chart-3: hsl(30 80% 55%);
+    --color-chart-4: hsl(280 65% 60%);
+    --color-chart-5: hsl(340 75% 55%);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+}
+
+/* Global dark-mode scrollbar styles */
+.dark * {
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+.dark *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.dark *::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dark *::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+.dark *::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+.dark *::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* gantt-task-react dark mode overrides */
+.dark ._2dZTy {
+  fill: var(--color-background);
+}
+.dark ._2dZTy:nth-child(even) {
+  fill: hsl(216, 12%, 8%);
+}
+.dark ._34SS0:nth-of-type(even) {
+  background-color: hsl(215, 25%, 8%);
+}
+.dark ._9w8d5 {
+  fill: var(--color-foreground);
+}
+.dark ._2q1Kt {
+  fill: var(--color-muted-foreground);
+}
+.dark ._3KcaM {
+  fill: var(--color-muted-foreground);
+}
+.dark ._3rUKi {
+  stroke: hsl(215, 20%, 22%);
+}
+.dark ._RuwuK {
+  stroke: hsl(215, 20%, 22%);
+}
+.dark ._1rLuZ {
+  stroke: hsl(215, 20%, 22%);
+}
+.dark ._35nLX {
+  fill: var(--color-muted);
+  stroke: var(--color-border);
+}
+.dark ._3w_5u {
+  fill: var(--color-muted-foreground);
+}
+.dark ._3T42e {
+  background: var(--color-popover);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+}
+.dark ._29NTg {
+  color: var(--color-muted-foreground);
+}
+.dark ._2QjE6 {
+  color: var(--color-muted-foreground);
+}
+.dark ._3_ygE {
+  border-color: var(--color-border);
+}
+.dark ._3ZbQT {
+  border-color: var(--color-border);
+}
+.dark ._2eZzQ {
+  border-color: var(--color-border);
+}
+.dark ._2k9Ys {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+.dark ._2k9Ys::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  background-clip: padding-box;
+}
+.dark ._2k9Ys::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+  background-clip: padding-box;
+}
+.dark ._1eT-t {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+.dark ._1eT-t::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  background-clip: padding-box;
+}
+.dark ._1eT-t::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+  background-clip: padding-box;
+}

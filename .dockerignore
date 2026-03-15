@@ -1,0 +1,14 @@
+node_modules
+dist
+dist-ssr
+.git
+.gitignore
+.cursor
+.idea
+.vscode
+backend
+Dockerfile
+README.md
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
