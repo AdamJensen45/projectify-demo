@@ -9,6 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -21,7 +22,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Plus } from "lucide-react"
 import { toast } from "sonner"
-import { taskService, projectService, userService } from "@/services"
+import { taskService, projectService, userService, normalizeUserList } from "@/services"
 import type { Task, TaskStatus, TaskPriority, User, Project } from "@/types"
 
 interface NewTaskDialogProps {
@@ -37,6 +38,7 @@ export function NewTaskDialog({ onAdd, defaultProjectId }: NewTaskDialogProps) {
   const [status, setStatus] = useState<TaskStatus>("todo")
   const [priority, setPriority] = useState<TaskPriority>("medium")
   const [dueDate, setDueDate] = useState("")
+  const [dueDateError, setDueDateError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -47,9 +49,10 @@ export function NewTaskDialog({ onAdd, defaultProjectId }: NewTaskDialogProps) {
     if (!open) return
     Promise.all([userService.getAll(), projectService.getAll()])
       .then(([u, p]) => {
-        setUsers(u)
+        const users = normalizeUserList(u)
+        setUsers(users)
         setProjects(p)
-        if (!assigneeId && u.length > 0) setAssigneeId(u[0].id)
+        if (!assigneeId && users.length > 0) setAssigneeId(users[0].id)
         if (!projectId && p.length > 0) setProjectId(p[0].id)
       })
       .catch(() => {})
@@ -62,6 +65,7 @@ export function NewTaskDialog({ onAdd, defaultProjectId }: NewTaskDialogProps) {
     setStatus("todo")
     setPriority("medium")
     setDueDate("")
+    setDueDateError(null)
   }
 
   const today = new Date().toISOString().slice(0, 10)
@@ -75,6 +79,7 @@ export function NewTaskDialog({ onAdd, defaultProjectId }: NewTaskDialogProps) {
       return
     }
     if (dueDate < today) {
+      setDueDateError("Due date cannot be in the past.")
       setError("Due date cannot be in the past.")
       return
     }
@@ -218,14 +223,22 @@ export function NewTaskDialog({ onAdd, defaultProjectId }: NewTaskDialogProps) {
 
           <div className="space-y-2">
             <Label htmlFor="due-date">Due Date</Label>
-            <Input
+            <DatePicker
               id="due-date"
-              type="date"
               value={dueDate}
               min={today}
-              onChange={(e) => setDueDate(e.target.value)}
+              onChange={(nextValue) => {
+                setDueDate(nextValue)
+                if (nextValue) setDueDateError(null)
+              }}
+              onValidationError={setDueDateError}
+              minErrorMessage="Due date cannot be in the past."
+              placeholder="Select due date"
               required
             />
+            {dueDateError && (
+              <p className="text-sm text-destructive">{dueDateError}</p>
+            )}
           </div>
 
           <DialogFooter>

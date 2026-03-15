@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom"
 import {
   FolderKanban,
   ListTodo,
+  Loader2,
   CheckCircle2,
   Users,
 } from "lucide-react"
@@ -22,7 +23,6 @@ import { TaskTable } from "@/components/tasks/TaskTable"
 import { PageSkeleton } from "@/components/dashboard/PageSkeleton"
 import { activityService, projectService, taskService } from "@/services"
 import { useMyReports } from "@/hooks/useMyReports"
-import { useAuth } from "@/context/AuthContext"
 import type { Project, Task, Activity } from "@/types"
 import { MyReportsCard } from "@/components/reports/MyReportsCard"
 import { LogProgressDialog } from "@/components/reports/LogProgressDialog"
@@ -46,7 +46,6 @@ export function DashboardPage() {
   const [timeRangeActivity, setTimeRangeActivity] = useState<DashboardTimeRange>("1w")
   const [timeRangeTasks, setTimeRangeTasks] = useState<DashboardTimeRange>("1w")
   const location = useLocation()
-  const { user } = useAuth()
 
   const loadActivities = () => {
     activityService.getAll().then(setActivities).catch(() => setActivities([]))
@@ -57,7 +56,7 @@ export function DashboardPage() {
     try {
       const [p, t, a] = await Promise.all([
         projectService.getAll(),
-        user?.id ? taskService.getByAssignee(user.id) : taskService.getAll(),
+        taskService.getAll(),
         activityService.getAll(),
       ])
       setProjects(p)
@@ -71,7 +70,7 @@ export function DashboardPage() {
   useEffect(() => {
     if (location.pathname !== "/dashboard") return
     loadData()
-  }, [location.pathname, user?.id])
+  }, [location.pathname])
 
   useEffect(() => {
     if (!loading) loadReports()
@@ -91,8 +90,9 @@ export function DashboardPage() {
     return activitiesInRange.slice(0, 10)
   }, [activitiesInRange])
 
+  const todoCount = tasks.filter((t) => t.status === "todo").length
+  const inProgressCount = tasks.filter((t) => t.status === "in-progress").length
   const completedCount = tasks.filter((t) => t.status === "completed").length
-  const activeTasksCount = tasks.filter((t) => t.status !== "completed").length
   const teamMemberIds = new Set(projects.flatMap((p) => p.team.map((m) => m.id)))
 
   const stats = [
@@ -102,9 +102,14 @@ export function DashboardPage() {
       icon: FolderKanban,
     },
     {
-      title: "Active Tasks",
-      value: activeTasksCount,
+      title: "To Do",
+      value: todoCount,
       icon: ListTodo,
+    },
+    {
+      title: "In Progress",
+      value: inProgressCount,
+      icon: Loader2,
     },
     {
       title: "Completed",
@@ -122,7 +127,7 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {stats.map((stat) => (
           <StatCard key={stat.title} {...stat} />
         ))}

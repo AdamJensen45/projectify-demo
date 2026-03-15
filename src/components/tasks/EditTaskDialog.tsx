@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/select"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { toast } from "sonner"
-import { taskService, userService } from "@/services"
+import { taskService, userService, normalizeUserList } from "@/services"
 import type { Task, TaskStatus, TaskPriority, User } from "@/types"
 import { normalizeTaskStatus } from "@/lib/taskStatus"
 
@@ -48,7 +49,7 @@ export function EditTaskDialog({
 
   useEffect(() => {
     if (!open) return
-    userService.getAll().then(setUsers).catch(() => {})
+    userService.getAll().then((data) => setUsers(normalizeUserList(data))).catch(() => {})
   }, [open])
 
   useEffect(() => {
@@ -195,12 +196,12 @@ export function EditTaskDialog({
 
           <div className="space-y-2">
             <Label htmlFor="edit-due-date">Due Date</Label>
-            <Input
+            <DatePicker
               id="edit-due-date"
-              type="date"
               value={dueDate}
               min={today}
-              onChange={(e) => setDueDate(e.target.value)}
+              onChange={setDueDate}
+              placeholder="Select due date"
               required
             />
           </div>

@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
+import { DatePicker } from "@/components/ui/date-picker"
 import { toast } from "sonner"
 import { reportService, taskService } from "@/services"
 import { useAuth } from "@/context/AuthContext"
@@ -131,11 +131,11 @@ export function LogProgressDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="report-date">Date</Label>
-            <Input
+            <DatePicker
               id="report-date"
-              type="date"
               value={reportDate}
-              onChange={(e) => setReportDate(e.target.value)}
+              onChange={setReportDate}
+              placeholder="Select date"
             />
           </div>
           <div className="space-y-2">

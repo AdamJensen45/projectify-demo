@@ -3,6 +3,8 @@ package com.projectflow.service;
 import com.projectflow.model.Activity;
 import com.projectflow.model.User;
 import com.projectflow.repository.ActivityRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -19,9 +21,16 @@ public class ActivityService {
 
     public List<Activity> getVisibleActivities(User currentUser) {
         if (currentUser.getRole() == User.UserRole.ADMIN) {
-            return activityRepository.findAllByOrderByTimestampDesc();
+            return activityRepository.findFirst200ByOrderByTimestampDesc();
         }
-        return activityRepository.findByUserIdOrderByTimestampDesc(currentUser.getId());
+        return activityRepository.findFirst200ByUserIdOrderByTimestampDesc(currentUser.getId());
+    }
+
+    public Page<Activity> getVisibleActivitiesPaginated(User currentUser, Pageable pageable) {
+        if (currentUser.getRole() == User.UserRole.ADMIN) {
+            return activityRepository.findAllByOrderByTimestampDesc(pageable);
+        }
+        return activityRepository.findByUserIdOrderByTimestampDesc(currentUser.getId(), pageable);
     }
 
     public Activity log(User actor, String action, String target) {

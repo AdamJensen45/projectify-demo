@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Shield, User as UserIcon } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
+import { ChangePasswordDialog } from "@/components/settings/ChangePasswordDialog"
 
 export function SettingsPage() {
   const { user, isAdmin } = useAuth()
@@ -99,22 +100,8 @@ export function SettingsPage() {
           <CardTitle>Account</CardTitle>
           <CardDescription>Manage your account security</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="current-password">Current Password</Label>
-            <Input id="current-password" type="password" placeholder="••••••••" />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
-              <Input id="new-password" type="password" placeholder="••••••••" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-new-password">Confirm New Password</Label>
-              <Input id="confirm-new-password" type="password" placeholder="••••••••" />
-            </div>
-          </div>
-          <Button variant="outline">Change Password</Button>
+        <CardContent>
+          <ChangePasswordDialog />
         </CardContent>
       </Card>
     </div>

@@ -4,6 +4,9 @@ import com.projectflow.model.Project;
 import com.projectflow.model.Task;
 import com.projectflow.model.User;
 import com.projectflow.service.ProjectService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +24,16 @@ public class ProjectController {
     }
 
     @GetMapping
-    public List<Project> getAll(@AuthenticationPrincipal User user) {
+    public Object getAll(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @AuthenticationPrincipal User user) {
+        if (page != null && size != null) {
+            Pageable pageable = PageRequest.of(page, size);
+            return projectService.getAllPaginated(user, search, status, pageable);
+        }
         return projectService.getAll(user);
     }
 

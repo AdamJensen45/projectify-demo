@@ -13,6 +13,9 @@ import com.projectflow.repository.UserRepository;
 import com.projectflow.service.ActivityService;
 import com.projectflow.service.TaskService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -44,7 +47,18 @@ public class TaskController {
     }
 
     @GetMapping
-    public List<Task> getAll(@RequestParam(required = false) String assignee, @AuthenticationPrincipal User user) {
+    public Object getAll(
+            @RequestParam(required = false) String assignee,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String priority,
+            @AuthenticationPrincipal User user) {
+        if (page != null && size != null) {
+            Pageable pageable = PageRequest.of(page, size);
+            return taskService.getAllPaginated(user, assignee, search, status, priority, pageable);
+        }
         return taskService.getAll(user, assignee);
     }
 

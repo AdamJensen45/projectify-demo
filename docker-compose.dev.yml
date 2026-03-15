@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: projectflow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - projectflow_postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d projectflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/projectflow
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      APP_JWT_SECRET: projectflow-secret-key-change-in-production-must-be-at-least-256-bits-long
+    ports:
+      - "8080:8080"
+    volumes:
+      # Backend source mount disabled: on Windows bind-mount can fail, causing
+      # "No sources to compile". Image has sources via COPY. Re-enable for hot reload:
+      # - ./backend:/app
+      - maven_cache:/root/.m2
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      VITE_API_URL: http://localhost:8080/api
+      VITE_USE_POLLING: "true"
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      # Use a named volume so container has its own node_modules. After adding new
+      # npm dependencies, remove this volume and run: docker compose -f docker-compose.dev.yml exec frontend npm install
+      - frontend_node_modules:/app/node_modules
+
+volumes:
+  projectflow_postgres_dev_data:
+  maven_cache:
+  frontend_node_modules:

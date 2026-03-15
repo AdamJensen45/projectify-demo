@@ -110,6 +110,28 @@
   }
 }
 
+.app-shell-gradient {
+  background-color: hsl(210 100% 97%);
+  background-image:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(219, 234, 254, 0.78) 0%, rgba(239, 246, 255, 0.72) 32%, rgba(248, 250, 252, 0.88) 64%, rgba(255, 255, 255, 1) 100%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.dark .app-shell-gradient {
+  background-color: hsl(222 47% 11%);
+  background-image:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.14), transparent 24%),
+    linear-gradient(180deg, rgba(17, 24, 39, 0.96) 0%, rgba(10, 22, 47, 0.96) 42%, rgba(2, 6, 23, 1) 100%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
 /* Global dark-mode scrollbar styles */
 .dark * {
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
@@ -130,6 +152,11 @@
 }
 .dark *::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/* Gantt: single scrollbar per axis – card does not scroll, only the library does */
+.gantt-card-content {
+  overflow: hidden;
 }
 
 /* gantt-task-react dark mode overrides */

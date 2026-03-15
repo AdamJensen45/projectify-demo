@@ -8,8 +8,12 @@ import com.projectflow.model.User;
 import com.projectflow.repository.ProjectMembershipRepository;
 import com.projectflow.repository.ProjectRepository;
 import com.projectflow.repository.TaskRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +48,33 @@ public class ProjectService {
                     .toList();
             projects = projectIds.isEmpty() ? List.of() : projectRepository.findByIdIn(projectIds);
         }
-        return projects.stream().map(this::withTeam).toList();
+        if (projects.isEmpty()) return List.of();
+        List<String> ids = projects.stream().map(Project::getId).toList();
+        List<Task> allTasks = taskRepository.findByProjectIdIn(ids);
+        return projects.stream().map(p -> withTeamFromTasks(p, allTasks)).toList();
+    }
+
+    public Page<Project> getAllPaginated(User currentUser, String search, String status, Pageable pageable) {
+        List<String> ids = null;
+        if (currentUser.getRole() != User.UserRole.ADMIN) {
+            ids = projectMembershipRepository.findByUserId(currentUser.getId()).stream()
+                    .map(ProjectMembership::getProjectId)
+                    .distinct()
+                    .toList();
+            if (ids.isEmpty()) return new PageImpl<>(Collections.emptyList(), pageable, 0);
+        }
+        Page<Project> page = projectRepository.findWithFilters(ids, emptyToNull(status), emptyToNull(search), pageable);
+        if (page.isEmpty()) return page;
+        List<String> projectIds = page.getContent().stream().map(Project::getId).toList();
+        List<Task> allTasks = taskRepository.findByProjectIdIn(projectIds);
+        List<Project> enriched = page.getContent().stream()
+                .map(p -> withTeamFromTasks(p, allTasks))
+                .toList();
+        return new org.springframework.data.domain.PageImpl<>(enriched, pageable, page.getTotalElements());
+    }
+
+    private static String emptyToNull(String s) {
+        return (s == null || s.isBlank()) ? null : s.trim();
     }
 
     public Project getById(String id, User currentUser) {
@@ -54,7 +84,7 @@ public class ProjectService {
             boolean hasAccess = projectMembershipRepository.existsByUserIdAndProjectId(currentUser.getId(), id);
             if (!hasAccess) throw new ForbiddenException("Access denied to this project");
         }
-        return withTeam(project);
+        return withTeam(project); // single project: one findByProjectId is fine
     }
 
     public Project create(Project project, User createdBy) {
@@ -103,7 +133,14 @@ public class ProjectService {
 
     private Project withTeam(Project project) {
         List<Task> tasks = taskRepository.findByProjectId(project.getId());
-        List<Map<String, String>> team = tasks.stream()
+        return withTeamFromTasks(project, tasks);
+    }
+
+    private Project withTeamFromTasks(Project project, List<Task> tasks) {
+        List<Task> projectTasks = tasks.stream()
+                .filter(t -> project.getId().equals(t.getProjectId()))
+                .toList();
+        List<Map<String, String>> team = projectTasks.stream()
                 .map(Task::getAssignee)
                 .filter(u -> u != null)
                 .collect(Collectors.collectingAndThen(
@@ -120,9 +157,9 @@ public class ProjectService {
                                 .collect(Collectors.toList())
                 ));
         project.setTeam(team);
-        int total = tasks.size();
+        int total = projectTasks.size();
         if (total > 0) {
-            long completed = tasks.stream().filter(t -> t.getStatus() == TaskStatus.COMPLETED).count();
+            long completed = projectTasks.stream().filter(t -> t.getStatus() == TaskStatus.COMPLETED).count();
             project.setProgress((int) Math.round(100.0 * completed / total));
         } else {
             project.setProgress(0);

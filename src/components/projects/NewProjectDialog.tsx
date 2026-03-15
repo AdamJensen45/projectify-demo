@@ -9,6 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -34,6 +35,7 @@ export function NewProjectDialog({ onAdd }: NewProjectDialogProps) {
   const [status, setStatus] = useState<ProjectStatus>("planning")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
+  const [endDateError, setEndDateError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -43,9 +45,11 @@ export function NewProjectDialog({ onAdd }: NewProjectDialogProps) {
     setStatus("planning")
     setStartDate("")
     setEndDate("")
+    setEndDateError(null)
   }
 
   const today = new Date().toISOString().slice(0, 10)
+  const endDateMin = startDate && startDate > today ? startDate : today
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,10 +60,12 @@ export function NewProjectDialog({ onAdd }: NewProjectDialogProps) {
       return
     }
     if (endDate < startDate) {
+      setEndDateError("End date must be on or after start date.")
       setError("End date must be on or after start date.")
       return
     }
     if (endDate < today) {
+      setEndDateError("End date cannot be in the past.")
       setError("End date cannot be in the past.")
       return
     }
@@ -147,25 +153,39 @@ export function NewProjectDialog({ onAdd }: NewProjectDialogProps) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start-date">Start Date</Label>
-              <Input
+              <DatePicker
                 id="start-date"
-                type="date"
                 value={startDate}
-                min={today}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(nextValue) => {
+                  setStartDate(nextValue)
+                  setEndDateError(null)
+                }}
+                placeholder="Select start date"
                 required
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="end-date">End Date</Label>
-              <Input
+              <DatePicker
                 id="end-date"
-                type="date"
                 value={endDate}
-                min={startDate || today}
-                onChange={(e) => setEndDate(e.target.value)}
+                min={endDateMin}
+                onChange={(nextValue) => {
+                  setEndDate(nextValue)
+                  if (nextValue) setEndDateError(null)
+                }}
+                onValidationError={setEndDateError}
+                minErrorMessage={
+                  startDate && startDate > today
+                    ? "End date must be on or after start date."
+                    : "End date cannot be in the past."
+                }
+                placeholder="Select end date"
                 required
               />
+              {endDateError && (
+                <p className="text-sm text-destructive">{endDateError}</p>
+              )}
             </div>
           </div>
 

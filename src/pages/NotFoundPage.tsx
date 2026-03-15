@@ -4,7 +4,7 @@ import { Layers } from "lucide-react"
 
 export function NotFoundPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
+    <div className="app-shell-gradient flex min-h-screen flex-col items-center justify-center px-4 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground mb-6">
         <Layers className="h-8 w-8" />
       </div>

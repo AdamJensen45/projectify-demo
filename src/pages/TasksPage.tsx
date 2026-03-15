@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Navigate } from "react-router-dom"
 import { toast } from "sonner"
 import { taskService } from "@/services"
@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Pagination } from "@/components/ui/pagination"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TaskTable } from "@/components/tasks/TaskTable"
 import { NewTaskDialog } from "@/components/tasks/NewTaskDialog"
@@ -18,12 +19,13 @@ import { EditTaskDialog } from "@/components/tasks/EditTaskDialog"
 import { TaskReportsDialog } from "@/components/reports/TaskReportsDialog"
 import { LogProgressDialog } from "@/components/reports/LogProgressDialog"
 import { useMyReports } from "@/hooks/useMyReports"
-import { useTaskCollection } from "@/hooks/useTaskCollection"
-import { useFilteredTasks } from "@/hooks/useFilteredTasks"
 import { useAuth } from "@/context/AuthContext"
 import { useSearch } from "@/context/SearchContext"
-import type { Task, TaskStatus } from "@/types"
+import type { Task, TaskStatus, TaskPriority } from "@/types"
 import { withNormalizedStatus } from "@/lib/taskStatus"
+import { normalizeTaskStatus } from "@/lib/taskStatus"
+
+const PAGE_SIZE = 15
 
 interface TasksPageProps {
   view?: "my-tasks" | "all"
@@ -32,39 +34,84 @@ interface TasksPageProps {
 export function TasksPage({ view = "my-tasks" }: TasksPageProps) {
   const { user, isAdmin } = useAuth()
   const { query } = useSearch()
-  const { taskList, setTaskList, loading } = useTaskCollection({ view, userId: user?.id })
-  const { reports: myReports, reload: loadMyReports } = useMyReports(view === "my-tasks" && !!user?.id)
+  const [page, setPage] = useState(0)
+  const [allTasks, setAllTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("all")
+  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | "all">("all")
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [reportsDialogTask, setReportsDialogTask] = useState<Task | null>(null)
   const [logProgressOpen, setLogProgressOpen] = useState(false)
 
+  const { reports: myReports, reload: loadMyReports } = useMyReports(view === "my-tasks" && !!user?.id)
+
   if (view === "all" && !isAdmin) {
     return <Navigate to="/tasks/my-tasks" replace />
   }
 
-  const visibleTasks = useMemo(() => {
-    if (!query.trim()) return taskList
-    const q = query.toLowerCase()
-    return taskList.filter(
-      (t) =>
-        t.name.toLowerCase().includes(q) ||
-        (t.assignee?.name && t.assignee.name.toLowerCase().includes(q))
-    )
-  }, [taskList, query])
+  const loadTasks = useCallback(async () => {
+    setLoading(true)
+    try {
+      let tasks: Task[]
+      if (view === "all") {
+        tasks = await taskService.getAll()
+      } else if (user?.id) {
+        tasks = await taskService.getByAssignee(user.id)
+      } else {
+        tasks = []
+      }
+      setAllTasks(Array.isArray(tasks) ? tasks.map(withNormalizedStatus) : [])
+    } catch {
+      setAllTasks([])
+    } finally {
+      setLoading(false)
+    }
+  }, [view, user?.id])
 
-  const filteredTasks = useFilteredTasks(visibleTasks, statusFilter)
+  useEffect(() => {
+    loadTasks()
+  }, [loadTasks])
+
+  useEffect(() => {
+    setPage(0)
+  }, [query, statusFilter, priorityFilter])
+
+  const filtered = useMemo(() => {
+    let list = allTasks
+    if (query.trim()) {
+      const q = query.toLowerCase()
+      list = list.filter(
+        (t) =>
+          t.name.toLowerCase().includes(q) ||
+          (t.assignee?.name && t.assignee.name.toLowerCase().includes(q))
+      )
+    }
+    if (priorityFilter !== "all") {
+      list = list.filter((t) => t.priority === priorityFilter)
+    }
+    if (statusFilter !== "all") {
+      list = list.filter((t) => normalizeTaskStatus(t.status) === statusFilter)
+    }
+    return list
+  }, [allTasks, query, statusFilter, priorityFilter])
+
+  const totalElements = filtered.length
+  const totalPages = Math.max(1, Math.ceil(totalElements / PAGE_SIZE))
+  const paginatedTasks = useMemo(
+    () => filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE),
+    [filtered, page]
+  )
 
   const handleAddTask = (task: Task) => {
-    setTaskList((prev) => [task, ...prev])
+    setAllTasks((prev) => [withNormalizedStatus(task), ...prev])
   }
 
   const handleDeleteTask = async (id: string) => {
-    const task = taskList.find((t) => t.id === id)
+    const task = allTasks.find((t) => t.id === id)
     try {
       await taskService.delete(id)
-      setTaskList((prev) => prev.filter((t) => t.id !== id))
+      setAllTasks((prev) => prev.filter((t) => t.id !== id))
       toast.success("Task deleted", {
         description: task ? `"${task.name}" has been removed.` : undefined,
       })
@@ -74,14 +121,11 @@ export function TasksPage({ view = "my-tasks" }: TasksPageProps) {
   }
 
   const handleStatusChange = async (id: string, status: TaskStatus) => {
-    const previous = taskList.find((t) => t.id === id)
+    const previous = allTasks.find((t) => t.id === id)
     if (!previous) return
 
-    // Optimistic update: show selected status immediately so it never "snaps back" to To Do
-    setTaskList((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, status } as Task : t
-      )
+    setAllTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, status } as Task : t))
     )
     if (statusFilter !== "all" && statusFilter !== status) {
       setStatusFilter("all")
@@ -89,14 +133,14 @@ export function TasksPage({ view = "my-tasks" }: TasksPageProps) {
 
     try {
       const updated = await taskService.update(id, { status })
-      setTaskList((prev) =>
+      setAllTasks((prev) =>
         prev.map((t) => (t.id === id ? withNormalizedStatus(updated) : t))
       )
       toast.success("Status updated", {
         description: `Task marked as "${status.replace(/-/g, " ")}"`,
       })
     } catch {
-      setTaskList((prev) =>
+      setAllTasks((prev) =>
         prev.map((t) => (t.id === id ? previous : t))
       )
       toast.error("Failed to update status")
@@ -106,7 +150,7 @@ export function TasksPage({ view = "my-tasks" }: TasksPageProps) {
   const handleComplete = async (id: string) => {
     try {
       const updated = await taskService.complete(id)
-      setTaskList((prev) =>
+      setAllTasks((prev) =>
         prev.map((t) => (t.id === id ? withNormalizedStatus(updated) : t))
       )
       if (statusFilter !== "all") setStatusFilter("all")
@@ -122,14 +166,14 @@ export function TasksPage({ view = "my-tasks" }: TasksPageProps) {
   }
 
   const handleEditSave = (updated: Task) => {
-    setTaskList((prev) =>
+    setAllTasks((prev) =>
       prev.map((t) => (t.id === updated.id ? withNormalizedStatus(updated) : t))
     )
     setEditDialogOpen(false)
     setEditingTask(null)
   }
 
-  if (loading) {
+  if (loading && allTasks.length === 0) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-5 w-32" />
@@ -142,10 +186,13 @@ export function TasksPage({ view = "my-tasks" }: TasksPageProps) {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          {filteredTasks.length} of {visibleTasks.length} task{visibleTasks.length !== 1 ? "s" : ""}
+          {totalElements} task{totalElements !== 1 ? "s" : ""}
           {view === "my-tasks" && " assigned to you"}
+          {query && ` matching "${query}"`}
+          {statusFilter !== "all" && ` • ${statusFilter.replace(/-/g, " ")}`}
+          {priorityFilter !== "all" && ` • ${priorityFilter}`}
         </p>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Select
             value={statusFilter}
             onValueChange={(v) => setStatusFilter(v as TaskStatus | "all")}
@@ -158,6 +205,21 @@ export function TasksPage({ view = "my-tasks" }: TasksPageProps) {
               <SelectItem value="todo">To Do</SelectItem>
               <SelectItem value="in-progress">In Progress</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={priorityFilter}
+            onValueChange={(v) => setPriorityFilter(v as TaskPriority | "all")}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Filter by priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priorities</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="urgent">Urgent</SelectItem>
             </SelectContent>
           </Select>
           {view === "all" && isAdmin && <NewTaskDialog onAdd={handleAddTask} />}
@@ -176,15 +238,34 @@ export function TasksPage({ view = "my-tasks" }: TasksPageProps) {
           </p>
         </CardHeader>
         <CardContent>
-          <TaskTable
-            tasks={filteredTasks}
-            onDelete={view === "all" && isAdmin ? handleDeleteTask : undefined}
-            onEdit={view === "all" && isAdmin ? handleEditTask : undefined}
-            onViewReports={(task) => setReportsDialogTask(task)}
-            onStatusChange={handleStatusChange}
-            onComplete={handleComplete}
-            currentUserId={view === "all" ? undefined : user?.id}
-          />
+          {paginatedTasks.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              {query ? `No tasks match "${query}"` : "No tasks yet."}
+            </p>
+          ) : (
+            <>
+              <TaskTable
+                tasks={paginatedTasks}
+                onDelete={view === "all" && isAdmin ? handleDeleteTask : undefined}
+                onEdit={view === "all" && isAdmin ? handleEditTask : undefined}
+                onViewReports={(task) => setReportsDialogTask(task)}
+                onStatusChange={handleStatusChange}
+                onComplete={handleComplete}
+                currentUserId={view === "all" ? undefined : user?.id}
+              />
+              {totalPages > 1 && (
+                <div className="mt-4 pt-4 border-t">
+                  <Pagination
+                    page={page}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                    totalElements={totalElements}
+                    size={PAGE_SIZE}
+                  />
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -207,7 +288,7 @@ export function TasksPage({ view = "my-tasks" }: TasksPageProps) {
       {view === "my-tasks" && (
         <MyReportsCard
           reports={myReports}
-          tasks={taskList}
+          tasks={allTasks}
           onLogProgress={() => setLogProgressOpen(true)}
           onSelectTask={setReportsDialogTask}
         />

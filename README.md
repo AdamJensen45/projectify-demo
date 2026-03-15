@@ -40,6 +40,32 @@ Then open:
 - frontend: `http://localhost`
 - backend API: `http://localhost:8080/api`
 
+### Docker dev mode with hot reload
+
+For day-to-day development, use the separate dev stack instead of the production-style one:
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+Then open:
+
+- frontend dev server: `http://localhost:5173`
+- backend API: `http://localhost:8080/api`
+
+This dev stack is configured for:
+
+- frontend hot reload through the Vite dev server
+- backend source-mounted development with `mvn spring-boot:run`
+- persistent PostgreSQL data in a separate dev volume
+
+When switching between the production stack and the dev stack, stop the other one first so ports do not clash:
+
+```bash
+docker compose down
+docker compose -f docker-compose.dev.yml down
+```
+
 ### Seeded demo data
 
 The PostgreSQL container uses a named volume, so demo data is inserted on first startup and then kept across container restarts.
@@ -109,6 +135,8 @@ The frontend reads its API base URL from `.env`:
 ```env
 VITE_API_URL=http://localhost:8080/api
 ```
+
+If you want Docker and hot reload together, use the dev compose file above instead of `npm run dev` directly.
 
 ## Optional dev fallback
 

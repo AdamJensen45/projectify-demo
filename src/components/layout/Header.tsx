@@ -20,6 +20,7 @@ const pageTitles: Record<string, string> = {
   "/tasks": "Tasks",
   "/tasks/my-tasks": "My Tasks",
   "/tasks/all": "All Tasks",
+  "/admin/users": "User management",
   "/settings": "Settings",
 }
 
@@ -48,11 +49,12 @@ export function Header({ onMenuClick }: HeaderProps) {
   const pathname = location.pathname
   const title = pageTitles[pathname] || "Dashboard"
 
-  // Show search only where it's used: Projects and Tasks pages
+  // Show search where it's used: Projects, Tasks, User management
   const showSearch =
     pathname === "/projects" ||
     pathname === "/tasks/my-tasks" ||
-    pathname === "/tasks/all"
+    pathname === "/tasks/all" ||
+    pathname === "/admin/users"
 
   const [activities, setActivities] = useState<Activity[]>([])
   const [hasUnread, setHasUnread] = useState(true)
@@ -82,7 +84,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-background px-4 lg:px-6">
+    <header className="flex h-16 items-center justify-between border-black/35 bg-white/50 px-4 backdrop-blur-md lg:px-6 dark:border-white/100 dark:bg-slate-950/48">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
