@@ -83,3 +83,36 @@ If you explicitly want the temporary in-memory backend profile instead of Postgr
 ```bash
 SPRING_PROFILES_ACTIVE=dev mvn spring-boot:run
 ```
+## Architecture
+
+The app is a pretty standard React + Spring Boot setup. The frontend talks to the backend over REST, and the backend talks to PostgreSQL. Auth is JWT-based, so there’s no server-side session store.
+
+**Backend:** Controllers handle HTTP, services contain the business logic and access rules, and JPA repositories talk to the database. Most access checks (who can see which projects and tasks) live in the services, not the controllers. Errors are centralized in a `GlobalExceptionHandler` that converts exceptions into proper HTTP status codes and JSON bodies.
+
+**Frontend:** Pages load data, hold state, and wire up dialogs and tables. Reusable UI components sit in `components/`, and a few shared hooks (`useTaskCollection`, `useTaskFormLookups`, etc.) handle common data-fetching patterns so we don’t repeat the same logic everywhere. API calls go through a single `request()` helper that attaches the JWT and handles 401s by redirecting to login.
+
+### Frontend component structure
+
+Top level:
+
+- `App.tsx` – routing and providers (`AuthProvider`, `SearchProvider`)
+- `LoginPage` – public, no layout
+- `ProtectedRoute` – wraps everything else; redirects to login if not authenticated
+- `AppLayout` – sidebar + main content area
+
+Inside `AppLayout`, the main pages are:
+
+- **DashboardPage** – stats and charts (projects, tasks, activity)
+- **ProjectsPage** – grid of project cards, filters, pagination. Uses `ProjectCard`, `NewProjectDialog`
+- **ProjectDetailPage** – single project with tasks. Uses `TaskTable`, `NewTaskDialog`, `EditTaskDialog`, `LogProgressDialog`
+- **TasksPage** – task list with filters; “my tasks” vs “all tasks” depending on role. Uses `TaskTable`, `NewTaskDialog`, `EditTaskDialog`, `MyReportsCard`, `LogProgressDialog`
+- **AdminUsersPage** – user list (admin only). Uses `EditUserDialog`, `DeleteUserAlert`
+- **SettingsPage** – profile and password change
+
+Shared components:
+
+- `components/ui/` – basic building blocks (Button, Input, Card, Dialog, Select, etc.) from Radix UI + Tailwind
+- `components/auth/` – `ProtectedRoute`, `AdminRoute`
+- `components/layout/` – `AppLayout`, `Sidebar`
+
+Dialogs are self-contained: they receive `open`, `onOpenChange`, and callbacks like `onAdd` or `onSave`. Lookup data (e.g. users for assignee dropdowns) is sometimes fetched by the dialog and sometimes passed in from the parent, depending on what’s simpler.
