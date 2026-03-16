@@ -49,8 +49,8 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Ensure admin@projectflow.com always has ADMIN role (fixes existing DBs or mis-seeded data)
-        Optional<User> existingAdmin = userRepository.findByEmail("admin@projectflow.com");
+        // Ensure admin@projectify.com always has ADMIN role (fixes existing DBs or mis-seeded data)
+        Optional<User> existingAdmin = userRepository.findByEmail("admin@projectify.com");
         if (existingAdmin.isPresent() && existingAdmin.get().getRole() != User.UserRole.ADMIN) {
             User u = existingAdmin.get();
             u.setRole(User.UserRole.ADMIN);
@@ -63,61 +63,61 @@ public class DataSeeder implements CommandLineRunner {
 
         if (userRepository.count() == 0) {
             // --- Users (20 total: 3 admins, 17 members) ---
-            admin = new User("admin", "admin@projectflow.com",
+            admin = new User("admin", "admin@projectify.com",
                     passwordEncoder.encode("admin123"), User.UserRole.ADMIN);
             admin.setAvatar("AU");
             admin = userRepository.save(admin);
 
-            User admin2 = new User("Emma Rogers", "emma@projectflow.com",
+            User admin2 = new User("Emma Rogers", "emma@projectify.com",
                     passwordEncoder.encode("emma123"), User.UserRole.ADMIN);
             admin2.setAvatar("ER");
             admin2 = userRepository.save(admin2);
 
-            User admin3 = new User("Marcus Lee", "marcus@projectflow.com",
+            User admin3 = new User("Marcus Lee", "marcus@projectify.com",
                     passwordEncoder.encode("marcus123"), User.UserRole.ADMIN);
             admin3.setAvatar("ML");
             admin3 = userRepository.save(admin3);
 
-            sarah = new User("Sarah Chen", "sarah@projectflow.com",
+            sarah = new User("Sarah Chen", "sarah@projectify.com",
                     passwordEncoder.encode("sarah123"), User.UserRole.MEMBER);
             sarah.setAvatar("SC");
             sarah = userRepository.save(sarah);
 
-            james = new User("James Wilson", "james@projectflow.com",
+            james = new User("James Wilson", "james@projectify.com",
                     passwordEncoder.encode("james123"), User.UserRole.MEMBER);
             james.setAvatar("JW");
             james = userRepository.save(james);
 
             String pw = passwordEncoder.encode("member123");
-            userRepository.save(createUser("Alex Turner", "alex@projectflow.com", pw, "AT"));
-            userRepository.save(createUser("Priya Patel", "priya@projectflow.com", pw, "PP"));
-            userRepository.save(createUser("David Kim", "david@projectflow.com", pw, "DK"));
-            userRepository.save(createUser("Maria Garcia", "maria@projectflow.com", pw, "MG"));
-            userRepository.save(createUser("Chris Brown", "chris@projectflow.com", pw, "CB"));
-            userRepository.save(createUser("Lisa Wang", "lisa@projectflow.com", pw, "LW"));
-            userRepository.save(createUser("Ryan Moore", "ryan@projectflow.com", pw, "RM"));
-            userRepository.save(createUser("Nina Singh", "nina@projectflow.com", pw, "NS"));
-            userRepository.save(createUser("Tom Anderson", "tom@projectflow.com", pw, "TA"));
-            userRepository.save(createUser("Julia Foster", "julia@projectflow.com", pw, "JF"));
-            userRepository.save(createUser("Kevin Nguyen", "kevin@projectflow.com", pw, "KN"));
-            userRepository.save(createUser("Rachel Green", "rachel@projectflow.com", pw, "RG"));
-            userRepository.save(createUser("Daniel White", "daniel@projectflow.com", pw, "DW"));
-            userRepository.save(createUser("Sofia Martinez", "sofia@projectflow.com", pw, "SM"));
-            userRepository.save(createUser("Mike Thompson", "mike@projectflow.com", pw, "MT"));
-            userRepository.save(createUser("Elena Petrova", "elena@projectflow.com", pw, "EP"));
-            userRepository.save(createUser("Omar Hassan", "omar@projectflow.com", pw, "OH"));
-            userRepository.save(createUser("Yuki Tanaka", "yuki@projectflow.com", pw, "YT"));
-            userRepository.save(createUser("Lucas Ferreira", "lucas@projectflow.com", pw, "LF"));
-            userRepository.save(createUser("Zara Khan", "zara@projectflow.com", pw, "ZK"));
-            userRepository.save(createUser("Ethan Brooks", "ethan@projectflow.com", pw, "EB"));
-            userRepository.save(createUser("Isabella Rossi", "isabella@projectflow.com", pw, "IR"));
-            userRepository.save(createUser("Noah Schmidt", "noah@projectflow.com", pw, "NSc"));
-            userRepository.save(createUser("Maya Johnson", "maya@projectflow.com", pw, "MJ"));
+            userRepository.save(createUser("Alex Turner", "alex@projectify.com", pw, "AT"));
+            userRepository.save(createUser("Priya Patel", "priya@projectify.com", pw, "PP"));
+            userRepository.save(createUser("David Kim", "david@projectify.com", pw, "DK"));
+            userRepository.save(createUser("Maria Garcia", "maria@projectify.com", pw, "MG"));
+            userRepository.save(createUser("Chris Brown", "chris@projectify.com", pw, "CB"));
+            userRepository.save(createUser("Lisa Wang", "lisa@projectify.com", pw, "LW"));
+            userRepository.save(createUser("Ryan Moore", "ryan@projectify.com", pw, "RM"));
+            userRepository.save(createUser("Nina Singh", "nina@projectify.com", pw, "NS"));
+            userRepository.save(createUser("Tom Anderson", "tom@projectify.com", pw, "TA"));
+            userRepository.save(createUser("Julia Foster", "julia@projectify.com", pw, "JF"));
+            userRepository.save(createUser("Kevin Nguyen", "kevin@projectify.com", pw, "KN"));
+            userRepository.save(createUser("Rachel Green", "rachel@projectify.com", pw, "RG"));
+            userRepository.save(createUser("Daniel White", "daniel@projectify.com", pw, "DW"));
+            userRepository.save(createUser("Sofia Martinez", "sofia@projectify.com", pw, "SM"));
+            userRepository.save(createUser("Mike Thompson", "mike@projectify.com", pw, "MT"));
+            userRepository.save(createUser("Elena Petrova", "elena@projectify.com", pw, "EP"));
+            userRepository.save(createUser("Omar Hassan", "omar@projectify.com", pw, "OH"));
+            userRepository.save(createUser("Yuki Tanaka", "yuki@projectify.com", pw, "YT"));
+            userRepository.save(createUser("Lucas Ferreira", "lucas@projectify.com", pw, "LF"));
+            userRepository.save(createUser("Zara Khan", "zara@projectify.com", pw, "ZK"));
+            userRepository.save(createUser("Ethan Brooks", "ethan@projectify.com", pw, "EB"));
+            userRepository.save(createUser("Isabella Rossi", "isabella@projectify.com", pw, "IR"));
+            userRepository.save(createUser("Noah Schmidt", "noah@projectify.com", pw, "NSc"));
+            userRepository.save(createUser("Maya Johnson", "maya@projectify.com", pw, "MJ"));
         } else {
-            admin = userRepository.findByEmail("admin@projectflow.com").orElseThrow(
-                    () -> new IllegalStateException("admin@projectflow.com must exist when users exist"));
-            sarah = userRepository.findByEmail("sarah@projectflow.com").orElse(admin);
-            james = userRepository.findByEmail("james@projectflow.com").orElse(admin);
+            admin = userRepository.findByEmail("admin@projectify.com").orElseThrow(
+                    () -> new IllegalStateException("admin@projectify.com must exist when users exist"));
+            sarah = userRepository.findByEmail("sarah@projectify.com").orElse(admin);
+            james = userRepository.findByEmail("james@projectify.com").orElse(admin);
         }
 
         if (projectRepository.count() > 0) return;

@@ -6,13 +6,22 @@ import { withNormalizedStatus } from "@/lib/taskStatus"
 interface UseTaskCollectionOptions {
   view: "my-tasks" | "all"
   userId?: string
+  enabled?: boolean
 }
 
-export function useTaskCollection({ view, userId }: UseTaskCollectionOptions) {
+export function useTaskCollection({
+  view,
+  userId,
+  enabled = true,
+}: UseTaskCollectionOptions) {
   const [taskList, setTaskList] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
 
   const reload = useCallback(async () => {
+    if (!enabled) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       if (view === "all") {
@@ -28,10 +37,12 @@ export function useTaskCollection({ view, userId }: UseTaskCollectionOptions) {
       }
 
       setTaskList([])
+    } catch {
+      setTaskList([])
     } finally {
       setLoading(false)
     }
-  }, [view, userId])
+  }, [enabled, view, userId])
 
   useEffect(() => {
     void reload()

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Navigate } from "react-router-dom"
 import { toast } from "sonner"
 import { taskService } from "@/services"
@@ -19,6 +19,7 @@ import { EditTaskDialog } from "@/components/tasks/EditTaskDialog"
 import { TaskReportsDialog } from "@/components/reports/TaskReportsDialog"
 import { LogProgressDialog } from "@/components/reports/LogProgressDialog"
 import { useMyReports } from "@/hooks/useMyReports"
+import { useTaskCollection } from "@/hooks/useTaskCollection"
 import { useAuth } from "@/context/AuthContext"
 import { useSearch } from "@/context/SearchContext"
 import type { Task, TaskStatus, TaskPriority } from "@/types"
@@ -35,8 +36,6 @@ export function TasksPage({ view = "my-tasks" }: TasksPageProps) {
   const { user, isAdmin } = useAuth()
   const { query } = useSearch()
   const [page, setPage] = useState(0)
-  const [allTasks, setAllTasks] = useState<Task[]>([])
-  const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("all")
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | "all">("all")
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -50,28 +49,14 @@ export function TasksPage({ view = "my-tasks" }: TasksPageProps) {
     return <Navigate to="/tasks/my-tasks" replace />
   }
 
-  const loadTasks = useCallback(async () => {
-    setLoading(true)
-    try {
-      let tasks: Task[]
-      if (view === "all") {
-        tasks = await taskService.getAll()
-      } else if (user?.id) {
-        tasks = await taskService.getByAssignee(user.id)
-      } else {
-        tasks = []
-      }
-      setAllTasks(Array.isArray(tasks) ? tasks.map(withNormalizedStatus) : [])
-    } catch {
-      setAllTasks([])
-    } finally {
-      setLoading(false)
-    }
-  }, [view, user?.id])
-
-  useEffect(() => {
-    loadTasks()
-  }, [loadTasks])
+  const {
+    taskList: allTasks,
+    setTaskList: setAllTasks,
+    loading,
+  } = useTaskCollection({
+    view,
+    userId: user?.id,
+  })
 
   useEffect(() => {
     setPage(0)

@@ -22,8 +22,10 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Plus } from "lucide-react"
 import { toast } from "sonner"
-import { taskService, projectService, userService, normalizeUserList } from "@/services"
-import type { Task, TaskStatus, TaskPriority, User, Project } from "@/types"
+import { taskService } from "@/services"
+import { useTaskFormLookups } from "@/hooks/useTaskFormLookups"
+import { todayIsoDate, validateDateBounds } from "@/lib/dateValidation"
+import type { Task, TaskStatus, TaskPriority } from "@/types"
 
 interface NewTaskDialogProps {
   onAdd: (task: Task) => void
@@ -42,21 +44,16 @@ export function NewTaskDialog({ onAdd, defaultProjectId }: NewTaskDialogProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const [users, setUsers] = useState<User[]>([])
-  const [projects, setProjects] = useState<Project[]>([])
+  const { users, projects } = useTaskFormLookups({
+    enabled: open,
+    includeProjects: !defaultProjectId,
+  })
 
   useEffect(() => {
     if (!open) return
-    Promise.all([userService.getAll(), projectService.getAll()])
-      .then(([u, p]) => {
-        const users = normalizeUserList(u)
-        setUsers(users)
-        setProjects(p)
-        if (!assigneeId && users.length > 0) setAssigneeId(users[0].id)
-        if (!projectId && p.length > 0) setProjectId(p[0].id)
-      })
-      .catch(() => {})
-  }, [open])
+    if (!assigneeId && users.length > 0) setAssigneeId(users[0].id)
+    if (!projectId && !defaultProjectId && projects.length > 0) setProjectId(projects[0].id)
+  }, [assigneeId, defaultProjectId, open, projectId, projects, users])
 
   const resetForm = () => {
     setName("")
@@ -68,7 +65,7 @@ export function NewTaskDialog({ onAdd, defaultProjectId }: NewTaskDialogProps) {
     setDueDateError(null)
   }
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayIsoDate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,9 +75,16 @@ export function NewTaskDialog({ onAdd, defaultProjectId }: NewTaskDialogProps) {
       setError("Task name, project, assignee and due date are required.")
       return
     }
-    if (dueDate < today) {
-      setDueDateError("Due date cannot be in the past.")
-      setError("Due date cannot be in the past.")
+    const dateError =
+      dueDateError ??
+      validateDateBounds({
+        value: dueDate,
+        min: today,
+        minMessage: "Due date cannot be in the past.",
+      })
+    if (dateError) {
+      setDueDateError(dateError)
+      setError(dateError)
       return
     }
 
@@ -233,7 +237,6 @@ export function NewTaskDialog({ onAdd, defaultProjectId }: NewTaskDialogProps) {
               }}
               onValidationError={setDueDateError}
               minErrorMessage="Due date cannot be in the past."
-              placeholder="Select due date"
               required
             />
             {dueDateError && (

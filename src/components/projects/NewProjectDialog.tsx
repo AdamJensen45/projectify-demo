@@ -22,6 +22,7 @@ import {
 import { Plus } from "lucide-react"
 import { toast } from "sonner"
 import { projectService } from "@/services"
+import { todayIsoDate, validateDateBounds } from "@/lib/dateValidation"
 import type { Project, ProjectStatus } from "@/types"
 
 interface NewProjectDialogProps {
@@ -48,7 +49,7 @@ export function NewProjectDialog({ onAdd }: NewProjectDialogProps) {
     setEndDateError(null)
   }
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayIsoDate()
   const endDateMin = startDate && startDate > today ? startDate : today
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,14 +60,19 @@ export function NewProjectDialog({ onAdd }: NewProjectDialogProps) {
       setError("Name, start date and end date are required.")
       return
     }
-    if (endDate < startDate) {
-      setEndDateError("End date must be on or after start date.")
-      setError("End date must be on or after start date.")
-      return
-    }
-    if (endDate < today) {
-      setEndDateError("End date cannot be in the past.")
-      setError("End date cannot be in the past.")
+    const dateError =
+      endDateError ??
+      validateDateBounds({
+        value: endDate,
+        min: endDateMin,
+        minMessage:
+          startDate && startDate > today
+            ? "End date must be on or after start date."
+            : "End date cannot be in the past.",
+      })
+    if (dateError) {
+      setEndDateError(dateError)
+      setError(dateError)
       return
     }
 
@@ -160,7 +166,6 @@ export function NewProjectDialog({ onAdd }: NewProjectDialogProps) {
                   setStartDate(nextValue)
                   setEndDateError(null)
                 }}
-                placeholder="Select start date"
                 required
               />
             </div>
@@ -180,7 +185,6 @@ export function NewProjectDialog({ onAdd }: NewProjectDialogProps) {
                     ? "End date must be on or after start date."
                     : "End date cannot be in the past."
                 }
-                placeholder="Select end date"
                 required
               />
               {endDateError && (

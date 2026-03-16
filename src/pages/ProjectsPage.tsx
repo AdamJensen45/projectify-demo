@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { projectService } from "@/services"
 import { ProjectCard } from "@/components/projects/ProjectCard"
@@ -22,7 +22,9 @@ export function ProjectsPage() {
   const { isAdmin } = useAuth()
   const { query } = useSearch()
   const [page, setPage] = useState(0)
-  const [allProjects, setAllProjects] = useState<Project[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
+  const [totalElements, setTotalElements] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | "all">("all")
 
@@ -30,47 +32,50 @@ export function ProjectsPage() {
     setPage(0)
   }, [query, statusFilter])
 
-  useEffect(() => {
+  const loadProjects = useCallback(async () => {
     setLoading(true)
-    projectService
-      .getAll()
-      .then((data) => setAllProjects(Array.isArray(data) ? data : []))
-      .catch(() => setAllProjects([]))
-      .finally(() => setLoading(false))
-  }, [])
-
-  const filtered = useMemo(() => {
-    let list = allProjects
-    if (query.trim()) {
-      const q = query.toLowerCase()
-      list = list.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          (p.description && p.description.toLowerCase().includes(q))
-      )
+    try {
+      const response = await projectService.getPage({
+        page,
+        size: PAGE_SIZE,
+        search: query.trim() || undefined,
+        status: statusFilter === "all" ? undefined : statusFilter,
+      })
+      setProjects(response.content)
+      setTotalElements(response.totalElements)
+      setTotalPages(Math.max(1, response.totalPages))
+    } catch {
+      setProjects([])
+      setTotalElements(0)
+      setTotalPages(1)
+    } finally {
+      setLoading(false)
     }
-    if (statusFilter !== "all") {
-      list = list.filter((p) => p.status === statusFilter)
+  }, [page, query, statusFilter])
+
+  useEffect(() => {
+    void loadProjects()
+  }, [loadProjects])
+
+  const handleAddProject = (_project: Project) => {
+    if (page !== 0) {
+      setPage(0)
+      return
     }
-    return list
-  }, [allProjects, query, statusFilter])
-
-  const totalElements = filtered.length
-  const totalPages = Math.max(1, Math.ceil(totalElements / PAGE_SIZE))
-  const paginatedProjects = useMemo(
-    () => filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE),
-    [filtered, page]
-  )
-
-  const handleAddProject = (project: Project) => {
-    setAllProjects((prev) => [project, ...prev])
+    void loadProjects()
   }
 
   const handleDeleteProject = async (id: string) => {
-    const project = allProjects.find((p) => p.id === id)
+    const project = projects.find((p) => p.id === id)
     try {
       await projectService.delete(id)
-      setAllProjects((prev) => prev.filter((p) => p.id !== id))
+      if (projects.length === 1 && page > 0) {
+        setPage((current) => Math.max(0, current - 1))
+      } else {
+        setProjects((prev) => prev.filter((p) => p.id !== id))
+        setTotalElements((current) => Math.max(0, current - 1))
+        void loadProjects()
+      }
       toast.success("Project deleted", {
         description: project ? `"${project.name}" has been removed.` : undefined,
       })
@@ -79,7 +84,7 @@ export function ProjectsPage() {
     }
   }
 
-  if (loading && allProjects.length === 0) {
+  if (loading && projects.length === 0) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-5 w-48" />
@@ -118,7 +123,7 @@ export function ProjectsPage() {
         </div>
       </div>
 
-      {paginatedProjects.length === 0 ? (
+      {projects.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <p className="text-muted-foreground text-sm">
             {query ? `No projects match "${query}"` : "You have not been assigned to any projects yet."}
@@ -127,7 +132,7 @@ export function ProjectsPage() {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {paginatedProjects.map((project) => (
+            {projects.map((project) => (
               <ProjectCard
                 key={project.id}
                 project={project}

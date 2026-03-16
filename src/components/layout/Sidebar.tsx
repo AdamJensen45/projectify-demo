@@ -65,7 +65,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Layers className="h-4 w-4" />
           </div>
-          <span className="text-lg font-bold tracking-tight">ProjectFlow</span>
+          <span className="text-lg font-bold tracking-tight">Projectify</span>
         </div>
 
         <Separator />

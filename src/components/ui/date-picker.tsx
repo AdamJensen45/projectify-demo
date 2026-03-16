@@ -92,6 +92,7 @@ export function DatePicker({
   maxErrorMessage = "Date cannot be after the allowed maximum.",
   invalidDateMessage = "Enter a valid date as dd/mm/yyyy.",
   id,
+  placeholder = "dd/mm/yyyy",
   required,
   disabled,
   className,
@@ -185,14 +186,14 @@ export function DatePicker({
       if (boundsError) {
         onValidationError?.(boundsError)
       } else {
-      const normalized = toValue(parsed)
-      const displayValue = format(parsed, DISPLAY_INPUT_FORMAT)
-      if (normalized !== value || displayValue !== draftValue) {
-        setDraftValue(displayValue)
-        onChange(normalized)
-      }
+        const normalized = toValue(parsed)
+        const displayValue = format(parsed, DISPLAY_INPUT_FORMAT)
+        if (normalized !== value || displayValue !== draftValue) {
+          setDraftValue(displayValue)
+          onChange(normalized)
+        }
         onValidationError?.(null)
-      return
+        return
       }
     } else if (extractDateDigits(draftValue).length === 8) {
       onValidationError?.(invalidDateMessage)
@@ -211,7 +212,7 @@ export function DatePicker({
             id={id}
             type="text"
             inputMode="numeric"
-            placeholder="dd/mm/yyyy"
+            placeholder={placeholder}
             value={draftValue}
             onChange={(e) => handleManualChange(e.target.value)}
             onBlur={handleBlur}

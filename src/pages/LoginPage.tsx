@@ -48,7 +48,7 @@ export function LoginPage() {
             <Layers className="h-6 w-6" />
           </div>
           <CardTitle className="text-2xl">Welcome back</CardTitle>
-          <CardDescription>Sign in to your ProjectFlow account</CardDescription>
+          <CardDescription>Sign in to your Projectify account</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
@@ -83,8 +83,8 @@ export function LoginPage() {
             </div>
             <div className="rounded-lg border bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
               <p className="font-medium text-foreground">Demo credentials</p>
-              <p>Admin: admin@projectflow.com / admin123</p>
-              <p>Member: sarah@projectflow.com / sarah123</p>
+              <p>Admin: admin@projectify.com / admin123</p>
+              <p>Member: sarah@projectify.com / sarah123</p>
             </div>
           </CardContent>
           <CardFooter>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -15,7 +15,7 @@ import { DeleteUserAlert } from "@/components/users/DeleteUserAlert"
 import { Pagination } from "@/components/ui/pagination"
 import { useAuth } from "@/context/AuthContext"
 import { useSearch } from "@/context/SearchContext"
-import { userService, normalizeUserList } from "@/services"
+import { normalizeUserPage, userService } from "@/services"
 import type { User, UserRole } from "@/types"
 
 const PAGE_SIZE = 15
@@ -24,7 +24,9 @@ export function AdminUsersPage() {
   const { user: currentUser } = useAuth()
   const { query } = useSearch()
   const [page, setPage] = useState(0)
-  const [allUsers, setAllUsers] = useState<User[]>([])
+  const [users, setUsers] = useState<User[]>([])
+  const [totalElements, setTotalElements] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [roleFilter, setRoleFilter] = useState<"all" | UserRole>("all")
@@ -33,58 +35,57 @@ export function AdminUsersPage() {
     setPage(0)
   }, [query, roleFilter])
 
-  useEffect(() => {
+  const loadUsers = useCallback(async () => {
     setLoading(true)
     setError(null)
-    userService
-      .getAll()
-      .then((data) => setAllUsers(Array.isArray(data) ? normalizeUserList(data) : []))
-      .catch((e) => {
-        setAllUsers([])
-        setError(e instanceof Error ? e.message : "Failed to load users")
-        toast.error("Failed to load users")
+    try {
+      const response = await userService.getPage({
+        page,
+        size: PAGE_SIZE,
+        search: query.trim() || undefined,
+        role: roleFilter === "all" ? undefined : roleFilter,
       })
-      .finally(() => setLoading(false))
-  }, [])
-
-  const filtered = useMemo(() => {
-    let list = allUsers
-    if (roleFilter !== "all") {
-      list = list.filter((u) => u.role === roleFilter)
+      const normalized = normalizeUserPage(response)
+      setUsers(normalized.content)
+      setTotalElements(normalized.totalElements)
+      setTotalPages(Math.max(1, normalized.totalPages))
+    } catch (e) {
+      setUsers([])
+      setTotalElements(0)
+      setTotalPages(1)
+      setError(e instanceof Error ? e.message : "Failed to load users")
+      toast.error("Failed to load users")
+    } finally {
+      setLoading(false)
     }
-    if (query.trim()) {
-      const q = query.toLowerCase()
-      list = list.filter(
-        (u) =>
-          u.name.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q)
-      )
-    }
-    return list
-  }, [allUsers, query, roleFilter])
+  }, [page, query, roleFilter])
 
-  const totalElements = filtered.length
-  const totalPages = Math.max(1, Math.ceil(totalElements / PAGE_SIZE))
-  const paginatedUsers = useMemo(
-    () => filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE),
-    [filtered, page]
-  )
+  useEffect(() => {
+    void loadUsers()
+  }, [loadUsers])
 
   const handleUserUpdated = (updatedUser: User) => {
-    setAllUsers((current) =>
+    setUsers((current) =>
       current.map((existing) => (existing.id === updatedUser.id ? updatedUser : existing))
     )
   }
 
   const handleUserDeleted = (deletedUserId: string) => {
-    setAllUsers((current) => current.filter((existing) => existing.id !== deletedUserId))
+    if (users.length === 1 && page > 0) {
+      setPage((current) => Math.max(0, current - 1))
+      return
+    }
+    setUsers((current) => current.filter((existing) => existing.id !== deletedUserId))
+    setTotalElements((current) => Math.max(0, current - 1))
+    void loadUsers()
   }
 
-  const handleUserCreated = () => {
-    userService
-      .getAll()
-      .then((data) => setAllUsers(Array.isArray(data) ? normalizeUserList(data) : []))
-      .catch(() => {})
+  const handleUserCreated = (_createdUser: User) => {
+    if (page !== 0) {
+      setPage(0)
+      return
+    }
+    void loadUsers()
   }
 
   return (
@@ -119,11 +120,11 @@ export function AdminUsersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading && allUsers.length === 0 ? (
+          {loading && users.length === 0 ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : error ? (
             <p className="text-sm text-destructive">{error}</p>
-          ) : paginatedUsers.length === 0 ? (
+          ) : users.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No users match {query ? `"${query}"` : ""} {roleFilter !== "all" ? `with role ${roleFilter}` : ""}.
             </p>
@@ -135,7 +136,7 @@ export function AdminUsersPage() {
                 {roleFilter !== "all" && ` • ${roleFilter}`}
               </p>
               <ul className="divide-y">
-                {paginatedUsers.map((u) => (
+                {users.map((u) => (
                   <li
                     key={u.id}
                     className="flex flex-col gap-3 py-4 first:pt-0 sm:flex-row sm:items-center sm:justify-between"

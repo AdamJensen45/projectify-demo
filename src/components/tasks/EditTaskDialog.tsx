@@ -20,8 +20,10 @@ import {
 } from "@/components/ui/select"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { toast } from "sonner"
-import { taskService, userService, normalizeUserList } from "@/services"
-import type { Task, TaskStatus, TaskPriority, User } from "@/types"
+import { taskService } from "@/services"
+import { useTaskFormLookups } from "@/hooks/useTaskFormLookups"
+import { todayIsoDate, validateDateBounds } from "@/lib/dateValidation"
+import type { Task, TaskStatus, TaskPriority } from "@/types"
 import { normalizeTaskStatus } from "@/lib/taskStatus"
 
 interface EditTaskDialogProps {
@@ -42,15 +44,13 @@ export function EditTaskDialog({
   const [status, setStatus] = useState<TaskStatus>("todo")
   const [priority, setPriority] = useState<TaskPriority>("medium")
   const [dueDate, setDueDate] = useState("")
+  const [dueDateError, setDueDateError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const [users, setUsers] = useState<User[]>([])
-
-  useEffect(() => {
-    if (!open) return
-    userService.getAll().then((data) => setUsers(normalizeUserList(data))).catch(() => {})
-  }, [open])
+  const { users } = useTaskFormLookups({
+    enabled: open,
+  })
 
   useEffect(() => {
     if (task) {
@@ -59,10 +59,11 @@ export function EditTaskDialog({
       setStatus(normalizeTaskStatus(task.status))
       setPriority(task.priority)
       setDueDate(task.dueDate ? task.dueDate.slice(0, 10) : "")
+      setDueDateError(null)
     }
   }, [task, open])
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayIsoDate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,8 +74,16 @@ export function EditTaskDialog({
       setError("Task name and due date are required.")
       return
     }
-    if (dueDate < today) {
-      setError("Due date cannot be in the past.")
+    const dateError =
+      dueDateError ??
+      validateDateBounds({
+        value: dueDate,
+        min: today,
+        minMessage: "Due date cannot be in the past.",
+      })
+    if (dateError) {
+      setDueDateError(dateError)
+      setError(dateError)
       return
     }
 
@@ -200,10 +209,17 @@ export function EditTaskDialog({
               id="edit-due-date"
               value={dueDate}
               min={today}
-              onChange={setDueDate}
-              placeholder="Select due date"
+              onChange={(nextValue) => {
+                setDueDate(nextValue)
+                if (nextValue) setDueDateError(null)
+              }}
+              onValidationError={setDueDateError}
+              minErrorMessage="Due date cannot be in the past."
               required
             />
+            {dueDateError && (
+              <p className="text-sm text-destructive">{dueDateError}</p>
+            )}
           </div>
 
           <DialogFooter>

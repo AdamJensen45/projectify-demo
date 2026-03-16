@@ -39,21 +39,13 @@ public class ProjectController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Project> getById(@PathVariable String id, @AuthenticationPrincipal User user) {
-        try {
-            Project project = projectService.getById(id, user);
-            return project != null ? ResponseEntity.ok(project) : ResponseEntity.notFound().build();
-        } catch (ProjectService.ForbiddenException e) {
-            return ResponseEntity.status(403).build();
-        }
+        Project project = projectService.getById(id, user);
+        return project != null ? ResponseEntity.ok(project) : ResponseEntity.notFound().build();
     }
 
     @GetMapping("/{id}/tasks")
     public ResponseEntity<List<Task>> getTasks(@PathVariable String id, @AuthenticationPrincipal User user) {
-        try {
-            return ResponseEntity.ok(projectService.getTasks(id, user));
-        } catch (ProjectService.ForbiddenException e) {
-            return ResponseEntity.status(403).build();
-        }
+        return ResponseEntity.ok(projectService.getTasks(id, user));
     }
 
     @PostMapping

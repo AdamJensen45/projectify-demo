@@ -2,7 +2,6 @@ import type { User, Project, Task, Activity, TaskProgressReport } from "@/types"
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api"
 
-/** Spring Data Page response */
 export interface PageResponse<T> {
   content: T[]
   totalElements: number
@@ -45,13 +44,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       const body = JSON.parse(text)
       if (body && typeof body.message === "string") message = body.message
       else if (body && typeof body.error === "string") message = body.error
-    } catch {
-      // use message as-is
-    }
+    } catch {}
     throw new Error(message)
   }
 
-  // 204 No Content has no body; calling res.json() would throw
   if (res.status === 204) {
     return undefined as T
   }
@@ -154,13 +150,19 @@ export const activityApi = {
 
 export type UserResponse = Omit<User, "role"> & { role: string }
 
-/** Normalize API user response to User (role as UserRole). */
 export function normalizeUser(r: UserResponse): User {
   return { ...r, role: r.role as User["role"] }
 }
 
 export function normalizeUserList(list: UserResponse[]): User[] {
   return list.map(normalizeUser)
+}
+
+export function normalizeUserPage(page: PageResponse<UserResponse>): PageResponse<User> {
+  return {
+    ...page,
+    content: normalizeUserList(page.content),
+  }
 }
 
 export const userApi = {

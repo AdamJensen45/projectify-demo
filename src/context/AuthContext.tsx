@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ...state,
     isAdmin:
       state.user?.role?.toLowerCase() === "admin" ||
-      state.user?.email?.toLowerCase() === "admin@projectflow.com",
+      state.user?.email?.toLowerCase() === "admin@projectify.com",
     login,
     logout,
   }

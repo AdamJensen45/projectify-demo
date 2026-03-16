@@ -14,8 +14,8 @@
     <groupId>com.projectflow</groupId>
     <artifactId>projectflow-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>ProjectFlow Backend</name>
-    <description>Spring Boot backend for ProjectFlow dashboard</description>
+    <name>Projectify Backend</name>
+    <description>Spring Boot backend for Projectify dashboard</description>
 
     <properties>
         <java.version>17</java.version>

@@ -19,7 +19,8 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { DatePicker } from "@/components/ui/date-picker"
 import { toast } from "sonner"
-import { reportService, taskService } from "@/services"
+import { reportService } from "@/services"
+import { useTaskCollection } from "@/hooks/useTaskCollection"
 import { useAuth } from "@/context/AuthContext"
 import type { Task } from "@/types"
 
@@ -46,9 +47,13 @@ export function LogProgressDialog({
   const [reportDate, setReportDate] = useState(today())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [tasks, setTasks] = useState<Task[]>([])
+  const { taskList } = useTaskCollection({
+    view: isAdmin ? "all" : "my-tasks",
+    userId: user?.id,
+    enabled: open && taskOptions.length === 0,
+  })
 
-  const options = taskOptions.length > 0 ? taskOptions : tasks
+  const options = taskOptions.length > 0 ? taskOptions : taskList
 
   useEffect(() => {
     if (!open) return
@@ -61,15 +66,6 @@ export function LogProgressDialog({
   useEffect(() => {
     if (open && !taskId && options.length > 0) setTaskId(options[0].id)
   }, [open, taskId, options])
-
-  useEffect(() => {
-    if (!open || taskOptions.length > 0) return
-    if (isAdmin) {
-      taskService.getAll().then(setTasks).catch(() => setTasks([]))
-    } else if (user?.id) {
-      taskService.getByAssignee(user.id).then(setTasks).catch(() => setTasks([]))
-    }
-  }, [open, user?.id, isAdmin, taskOptions.length])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -135,7 +131,6 @@ export function LogProgressDialog({
               id="report-date"
               value={reportDate}
               onChange={setReportDate}
-              placeholder="Select date"
             />
           </div>
           <div className="space-y-2">

@@ -4,11 +4,8 @@ import com.projectflow.dto.user.ChangePasswordRequest;
 import com.projectflow.dto.user.UserCreateRequest;
 import com.projectflow.dto.user.UserUpdateRequest;
 import com.projectflow.model.User;
-import com.projectflow.repository.UserRepository;
 import com.projectflow.service.UserService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -16,19 +13,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
-    private final UserRepository userRepository;
     private final UserService userService;
 
-    public UserController(UserRepository userRepository, UserService userService) {
-        this.userRepository = userRepository;
+    public UserController(UserService userService) {
         this.userService = userService;
     }
 
@@ -38,21 +31,12 @@ public class UserController {
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String role) {
+        User.UserRole roleEnum = (role != null && !role.isBlank()) ? UserService.parseRole(role.trim()) : null;
         if (page != null && size != null) {
             Pageable pageable = PageRequest.of(page, size);
-            User.UserRole roleEnum = (role != null && !role.isBlank()) ? UserService.parseRole(role.trim()) : null;
-            Page<User> userPage = userRepository.findAllWithFilters(
-                    (search != null && !search.isBlank()) ? search.trim() : null,
-                    roleEnum,
-                    pageable);
-            List<Map<String, Object>> content = userPage.getContent().stream()
-                    .map(UserService::toResponse)
-                    .collect(Collectors.toList());
-            return new PageImpl<>(content, pageable, userPage.getTotalElements());
+            return userService.getAllResponsesPaginated(search, roleEnum, pageable);
         }
-        return userRepository.findAll().stream()
-                .map(UserService::toResponse)
-                .collect(Collectors.toList());
+        return userService.getAllResponses();
     }
 
     @PostMapping
@@ -97,11 +81,7 @@ public class UserController {
         if (user == null) {
             return ResponseEntity.status(401).body(Map.of("error", "Not authenticated"));
         }
-        try {
-            userService.changePassword(user.getId(), body.getCurrentPassword(), body.getNewPassword());
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        userService.changePassword(user.getId(), body.getCurrentPassword(), body.getNewPassword());
+        return ResponseEntity.noContent().build();
     }
 }

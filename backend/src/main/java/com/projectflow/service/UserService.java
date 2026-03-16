@@ -10,6 +10,9 @@ import com.projectflow.repository.TaskProgressReportRepository;
 import com.projectflow.repository.TaskRepository;
 import com.projectflow.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -61,6 +64,24 @@ public class UserService {
                 role != null ? role : User.UserRole.MEMBER
         );
         return userRepository.save(user);
+    }
+
+    public List<Map<String, Object>> getAllResponses() {
+        return userRepository.findAll().stream()
+                .map(UserService::toResponse)
+                .toList();
+    }
+
+    public Page<Map<String, Object>> getAllResponsesPaginated(String search, User.UserRole role, Pageable pageable) {
+        Page<User> userPage = userRepository.findAllWithFilters(
+                (search != null && !search.isBlank()) ? search.trim() : null,
+                role,
+                pageable
+        );
+        List<Map<String, Object>> content = userPage.getContent().stream()
+                .map(UserService::toResponse)
+                .toList();
+        return new PageImpl<>(content, pageable, userPage.getTotalElements());
     }
 
     @Transactional
