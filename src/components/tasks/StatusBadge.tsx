@@ -19,7 +19,6 @@ const statusConfig: Record<TaskStatus, { label: string; className: string }> = {
 }
 
 interface StatusBadgeProps {
-  /** Raw status from API or normalized; will be normalized for display. */
   status: TaskStatus | string
 }
 

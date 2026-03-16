@@ -2,10 +2,6 @@ import type { TaskStatus } from "@/types"
 
 const VALID: TaskStatus[] = ["todo", "in-progress", "completed"]
 
-/**
- * Normalize task status from API or user input to the three supported values.
- * Backend only supports TODO, IN_PROGRESS, COMPLETED (serialized as todo, in-progress, completed).
- */
 export function normalizeTaskStatus(value: string | undefined | null): TaskStatus {
   if (value == null || value === "") return "todo"
   const v = String(value).toLowerCase().replace(/_/g, "-").trim()
@@ -41,9 +37,6 @@ export function normalizeTaskStatus(value: string | undefined | null): TaskStatu
   return VALID.includes(cleaned as TaskStatus) ? (cleaned as TaskStatus) : "todo"
 }
 
-/**
- * Ensure a task object has a normalized status (for display and form control).
- */
 export function withNormalizedStatus<T extends { status?: string | null }>(task: T): T & { status: TaskStatus } {
   return { ...task, status: normalizeTaskStatus(task.status) } as T & { status: TaskStatus }
 }

@@ -35,10 +35,6 @@ public class Project {
     @JsonIgnore
     private User createdBy;
 
-    /**
-     * Computed at request-time from task assignees; never persisted.
-     * Each entry is { id, name, avatar, role } matching the frontend TeamMember type.
-     */
     @Transient
     @JsonInclude
     private List<Map<String, String>> team = new ArrayList<>();
@@ -62,7 +58,6 @@ public class Project {
     public User getCreatedBy() { return createdBy; }
     public void setCreatedBy(User createdBy) { this.createdBy = createdBy; }
 
-    /** Expose creator id for API without triggering lazy-load of User proxy. */
     @JsonProperty("createdById")
     public String getCreatedById() {
         if (createdBy == null) return null;

@@ -49,7 +49,6 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Ensure admin@projectify.com always has ADMIN role (fixes existing DBs or mis-seeded data)
         Optional<User> existingAdmin = userRepository.findByEmail("admin@projectify.com");
         if (existingAdmin.isPresent() && existingAdmin.get().getRole() != User.UserRole.ADMIN) {
             User u = existingAdmin.get();
@@ -62,7 +61,7 @@ public class DataSeeder implements CommandLineRunner {
         User james;
 
         if (userRepository.count() == 0) {
-            // --- Users (20 total: 3 admins, 17 members) ---
+            // --- Users ---
             admin = new User("admin", "admin@projectify.com",
                     passwordEncoder.encode("admin123"), User.UserRole.ADMIN);
             admin.setAvatar("AU");
@@ -173,7 +172,7 @@ public class DataSeeder implements CommandLineRunner {
         p5.setCreatedBy(admin);
         p5 = projectRepository.save(p5);
 
-        // --- Extra projects for load testing ---
+        // --- Extra projects ---
         Project p6 = saveProject(admin, "Infrastructure Upgrade", "Server and CI/CD pipeline modernization", "active", 55, "2026-02-10", "2026-05-30");
         Project p7 = saveProject(admin, "Customer Portal", "Self-service portal for enterprise customers", "planning", 5, "2026-03-15", "2026-08-31");
         Project p8 = saveProject(admin, "Data Warehouse", "Centralized analytics data warehouse", "active", 28, "2026-01-05", "2026-06-15");
@@ -190,7 +189,7 @@ public class DataSeeder implements CommandLineRunner {
         Project p19 = saveProject(admin, "Inventory System", "Warehouse and stock management", "on-hold", 58, "2026-02-05", "2026-05-25");
         Project p20 = saveProject(admin, "Training Platform", "Employee onboarding and training", "completed", 100, "2025-09-01", "2026-01-15");
 
-        // --- Project memberships: admin sees all; Sarah in p1,p2,p4; James in p1,p2,p3,p5; extend for p6-p20 ---
+        // --- Memberships ---
         projectMembershipRepository.save(new ProjectMembership(admin.getId(), p1.getId()));
         projectMembershipRepository.save(new ProjectMembership(admin.getId(), p2.getId()));
         projectMembershipRepository.save(new ProjectMembership(admin.getId(), p3.getId()));
@@ -304,13 +303,13 @@ public class DataSeeder implements CommandLineRunner {
         t10.setDueDate("2026-04-30");
         taskRepository.save(t10);
 
-        // --- Bulk tasks (7-9 per project) ---
+        // --- Bulk tasks ---
         List<User> assignees = userRepository.findAll();
-        addTasksForProject(p1, assignees, 5, 3);   // p1 had 3, add 5 → 8 total
-        addTasksForProject(p2, assignees, 5, 3);   // p2 had 3, add 5 → 8 total
-        addTasksForProject(p3, assignees, 6, 2);   // p3 had 2, add 6 → 8 total
-        addTasksForProject(p4, assignees, 8, 0);   // p4 had 0, add 8
-        addTasksForProject(p5, assignees, 6, 2);   // p5 had 2, add 6 → 8 total
+        addTasksForProject(p1, assignees, 5, 3);
+        addTasksForProject(p2, assignees, 5, 3);
+        addTasksForProject(p3, assignees, 6, 2);
+        addTasksForProject(p4, assignees, 8, 0);
+        addTasksForProject(p5, assignees, 6, 2);
         for (Project px : List.of(p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19, p20)) {
             addTasksForProject(px, assignees, 8, 0);
         }

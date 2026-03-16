@@ -49,7 +49,6 @@ export function Header({ onMenuClick }: HeaderProps) {
   const pathname = location.pathname
   const title = pageTitles[pathname] || "Dashboard"
 
-  // Show search where it's used: Projects, Tasks, User management
   const showSearch =
     pathname === "/projects" ||
     pathname === "/tasks/my-tasks" ||

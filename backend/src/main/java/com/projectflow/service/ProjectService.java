@@ -84,7 +84,7 @@ public class ProjectService {
             boolean hasAccess = projectMembershipRepository.existsByUserIdAndProjectId(currentUser.getId(), id);
             if (!hasAccess) throw new ForbiddenException("Access denied to this project");
         }
-        return withTeam(project); // single project: one findByProjectId is fine
+        return withTeam(project);
     }
 
     public Project create(Project project, User createdBy) {

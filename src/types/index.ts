@@ -10,7 +10,6 @@ export interface User {
 
 export type ProjectStatus = "active" | "completed" | "on-hold" | "planning"
 
-/** Backend only supports todo, in-progress, completed. Use normalizeTaskStatus() when reading from API. */
 export type TaskStatus = "todo" | "in-progress" | "completed"
 
 export type TaskPriority = "low" | "medium" | "high" | "urgent"

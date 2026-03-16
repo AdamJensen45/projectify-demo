@@ -125,8 +125,6 @@ export const taskApi = {
         ...(data.assignee?.id !== undefined && { assigneeId: data.assignee.id }),
       }),
     })
-    // Backend currently returns a malformed status for "in-progress".
-    // Preserve the user-selected status so the UI stays correct after a successful update.
     if (data.status !== undefined) {
       return { ...updated, status: data.status }
     }
