@@ -28,7 +28,7 @@ Demo accounts:
 - `backend`: Spring Boot API on port `8080`
 - `frontend`: production build served by Nginx on port `80`
 
-On the first run, the backend seeds demo users, projects, tasks, reports, and activity. Later restarts reuse the same database volume.
+For showcase purposes, on the first run, the backend seeds demo users, projects, tasks, reports, and activity. Later restarts reuse the same database volume.
 
 To reset to a fresh seeded database:
 
